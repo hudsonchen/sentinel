@@ -7,7 +7,7 @@ import time
 import torch
 import numpy as np
 import pytorch_mask_rcnn as pmr
-os.environ["CUDA_VISIBLE_DEVICES"] = "1,2"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2,3"
 
 
 def main(args):
@@ -38,16 +38,16 @@ def main(args):
     start_epoch = 0
     
     # find all checkpoints, and load the latest checkpoint
-    prefix, ext = os.path.splitext(args.ckpt_path)
-    ckpts = glob.glob(prefix + "-*" + ext)
-    ckpts.sort(key=lambda x: int(re.search(r"-(\d+){}".format(ext), os.path.split(x)[1]).group(1)))
-    if ckpts:
-        checkpoint = torch.load(ckpts[-1], map_location=device) # load last checkpoint
-        model.load_state_dict(checkpoint["model"])
-        optimizer.load_state_dict(checkpoint["optimizer"])
-        start_epoch = checkpoint["epochs"]
-        del checkpoint
-        torch.cuda.empty_cache()
+    # prefix, ext = os.path.splitext(args.ckpt_path)
+    # ckpts = glob.glob(prefix + "-*" + ext)
+    # ckpts.sort(key=lambda x: int(re.search(r"-(\d+){}".format(ext), os.path.split(x)[1]).group(1)))
+    # if ckpts:
+    #     checkpoint = torch.load(ckpts[-1], map_location=device) # load last checkpoint
+    #     model.load_state_dict(checkpoint["model"])
+    #     optimizer.load_state_dict(checkpoint["optimizer"])
+    #     start_epoch = checkpoint["epochs"]
+    #     del checkpoint
+    #     torch.cuda.empty_cache()
 
     since = time.time()
     print("\nalready trained: {} epochs; to {} epochs".format(start_epoch, args.epochs))

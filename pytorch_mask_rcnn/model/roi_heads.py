@@ -78,7 +78,9 @@ class RoIHeads(nn.Module):
         label = gt_label[matched_idx]
         num_pos = pos_idx.shape[0]
         label[num_pos:] = 0
-        
+
+        # if target['image_id'][0] != -10:
+        #     label =
         return proposal, matched_idx, label, regression_target
     
     def fastrcnn_inference(self, class_logit, box_regression, proposal, image_shape):

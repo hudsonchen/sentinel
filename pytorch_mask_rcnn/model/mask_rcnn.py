@@ -140,8 +140,9 @@ class MaskRCNN(nn.Module):
         
     def forward(self, image, target=None):
         ori_image_shape = image.shape[-2:]
-        
-        image, target = self.transformer(image, target)
+
+        if target['image_id'][0] != -10:
+            image, target = self.transformer(image, target)
         image_shape = image.shape[-2:]
         feature = self.backbone(image)
         
