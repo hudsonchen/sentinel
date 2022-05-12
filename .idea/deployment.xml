@@ -1,7 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="PublishConfigData" autoUpload="Always" serverName="xzhoubi@gpu9:22 agent" remoteFilesAllowedToDisappearOnAutoupload="false">
+  <component name="PublishConfigData" autoUpload="Always" serverName="xzhoubi@gpu8:22 agent" remoteFilesAllowedToDisappearOnAutoupload="false">
     <serverData>
+      <paths name="xzhoubi@gpu8:22 agent">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/home/xzhoubi/hudson/maskrcnn" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
       <paths name="xzhoubi@gpu9:22 agent">
         <serverdata>
           <mappings>

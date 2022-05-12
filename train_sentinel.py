@@ -7,7 +7,10 @@ import matplotlib.pyplot as plt
 import torch
 import numpy as np
 import pytorch_mask_rcnn as pmr
-os.environ["CUDA_VISIBLE_DEVICES"] = "2,3"
+import wandb
+from torch.utils.data import DataLoader
+os.environ["WANDB_API_KEY"]="c6ea42f5f183e325a719b86d84e7aed50b2dfd5c"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2, 3"
 
 
 def main(args):
@@ -15,53 +18,89 @@ def main(args):
     if device.type == "cuda": 
         pmr.get_gpu_prop(show=True)
     print("\ndevice: {}".format(device))
-        
-    # ---------------------- prepare data loader ------------------------------- #
+    gpu_num = torch.cuda.device_count()
+    args.batch_size *= gpu_num
 
-    image_array, target_list = pmr.load_sentinel(args)
+    # ---------------------- prepare data loader ------------------------------- #
+    train_dataset = pmr.Sentinel_Dataset(args, train=True)
+    test_dataset = pmr.Sentinel_Dataset(args, train=False)
+    train_loader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=True)
+    test_loader = DataLoader(dataset=test_dataset, batch_size=args.batch_size, shuffle=True)
 
     # -------------------------------------------------------------------------- #
     print(args)
-    num_classes = 2  # including background class
-    model = pmr.maskrcnn_resnet50(True, num_classes).to(device)
-    params = [p for p in model.parameters() if p.requires_grad]
-    optimizer = torch.optim.SGD(
-        params, lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
-    lr_lambda = lambda x: 0.1 ** bisect.bisect(args.lr_steps, x)
-    start_epoch = 0
+    wandb.init(project='sentinel', config=args, entity="hudsonchen")
+    vgg_model = pmr.VGGNet(requires_grad=True, remove_fc=True).to(device)
+    fcn_model = pmr.FCNs(pretrained_net=vgg_model, n_class=1).to(device)
+    fcn_model = torch.nn.DataParallel(fcn_model)
 
-    # ------------------------------- train ------------------------------------ #
-    for epoch in range(start_epoch, args.epochs):
-        print("\nepoch: {}".format(epoch + 1))
+    criterion = torch.nn.BCEWithLogitsLoss()
+    optimizer = torch.optim.Adam(fcn_model.parameters(), lr=args.lr)
 
-        for i in np.arange(image.shape[0]):
-            image = image_array[i, :][None, :, :, :].to(device)
-            target = target_list[i]
-            target = {k: v.to(device) for k, v in target.items()}
+    # --------------------------------------- train ----------------------------- #
+    for epoch in range(0, args.epochs):
+        fcn_model.eval()
+        with torch.no_grad():
+            loss_test = 0
+            acc_test = 0
+            iou_test = 0
+            for data in test_loader:
+                image = data['images'].to(device).float()
+                target = data['target'].to(device).float()
+                outputs = fcn_model(image)[:, 0, :]
+                loss_test += criterion(outputs, target)
+                acc_test += pmr.get_acc(outputs, target)
+                iou_test += pmr.get_iou(outputs, target)
+            loss_test /= len(test_loader)
+            acc_test /= len(test_loader)
+            iou_test /= len(test_loader)
 
-            args.lr_epoch = lr_lambda(epoch) * args.lr
-            print("lr_epoch: {:.5f}, factor: {:.5f}".format(args.lr_epoch, lr_lambda(epoch)))
+            loss_train = 0
+            acc_train = 0
+            iou_train = 0
+            for data in train_loader:
+                image = data['images'].to(device).float()
+                target = data['target'].to(device).float()
+                outputs = fcn_model(image)[:, 0, :]
+                loss_train += criterion(outputs, target)
+                acc_train += pmr.get_acc(outputs, target)
+                iou_train += pmr.get_iou(outputs, target)
+            loss_train /= len(train_loader)
+            acc_train /= len(train_loader)
+            iou_train /= len(train_loader)
 
-            model.train()
-            losses = model(image, target)
-            total_loss = sum(losses.values())
-            total_loss.backward()
+        wandb.log({"Train Loss": loss_train,
+                   "Train Acc": acc_train,
+                   "Train IoU": iou_train,
+                   "Test Loss": loss_test,
+                   "Test Acc": acc_test,
+                   "Test IoU": iou_test})
 
+        for data in train_loader:
+            image = data['images'].to(device).float()
+            target = data['target'].to(device).float()
+            fcn_model.train()
+            outputs = fcn_model(image)[:, 0, :]
+            loss = criterion(outputs, target)
+
+            loss.backward()
             optimizer.step()
             optimizer.zero_grad()
 
-        model.eval()
-        with torch.no_grad():
-            output = model(image)
-            map_test = target['masks']
-            map_test_hat = output['masks']
-            map_test_plot = map_test_hat.sum(0)
-
-            fig, axs = plt.subplots(1, 2)
-            axs[0].imshow(image.cpu().numpy().transpose((1, 2, 0)))
-            axs[1].imshow(map_test_plot.cpu().numpy(), cmap='gray')
-            plt.show()
-
+        if epoch % 5 == 0 or epoch == (args.epochs - 1):
+            fcn_model.eval()
+            train_date = "20211229"
+            test_date = "20211219"
+            with torch.no_grad():
+                fig_train = pmr.visualize(args, data, outputs, "train")
+                for data in test_loader:
+                    image = data['images'].to(device).float()
+                    target = data['target'].to(device).float()
+                    outputs = fcn_model(image)[:, 0, :]
+                    fig_test = pmr.visualize(args, data, outputs, "test")
+                    break
+            wandb.log({"fig_train": fig_train,
+                       "fig_test": fig_test})
 
 
 if __name__ == "__main__":
@@ -75,8 +114,9 @@ if __name__ == "__main__":
     parser.add_argument("--results")
     
     parser.add_argument("--seed", type=int, default=3)
+    parser.add_argument("--batch_size", type=int, default=2)
     parser.add_argument('--lr-steps', nargs="+", type=int, default=[6, 7])
-    parser.add_argument("--lr", type=float)
+    parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--momentum", type=float, default=0.9)
     parser.add_argument("--weight-decay", type=float, default=0.0001)
     

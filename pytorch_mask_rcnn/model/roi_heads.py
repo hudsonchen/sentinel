@@ -130,7 +130,6 @@ class RoIHeads(nn.Module):
         if self.has_mask():
             if self.training:
                 num_pos = regression_target.shape[0]
-                
                 mask_proposal = proposal[:num_pos]
                 pos_matched_idx = matched_idx[:num_pos]
                 mask_label = label[:num_pos]

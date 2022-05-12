@@ -17,7 +17,7 @@ class MaskRCNN(nn.Module):
     """
     Implements Mask R-CNN.
 
-    The input image to the model is expected to be a tensor, shape [C, H, W], and should be in 0-1 range.
+    The input images to the model is expected to be a tensor, shape [C, H, W], and should be in 0-1 range.
 
     The behavior of the model changes depending if it is in training or evaluation mode.
 
@@ -150,7 +150,7 @@ class MaskRCNN(nn.Module):
         result, roi_losses = self.head(feature, proposal, image_shape, target)
         
         if self.training:
-            return dict(**rpn_losses, **roi_losses)
+            return result, dict(**rpn_losses, **roi_losses)
         else:
             result = self.transformer.postprocess(result, image_shape, ori_image_shape)
             return result

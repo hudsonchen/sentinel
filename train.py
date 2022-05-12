@@ -99,7 +99,7 @@ def main(args):
         model.eval()
         with torch.no_grad():
             image = image.to(device)
-            output = model(image)
+            output = model(image, target)
             map_test = target['masks']
             map_test_hat = output['masks']
             map_test_plot = map_test_hat.sum(0)
@@ -122,7 +122,7 @@ if __name__ == "__main__":
     parser.add_argument("--ckpt-path", default="/home/xzhoubi/hudson/maskrcnn/checkpoints")
     parser.add_argument("--results")
     
-    parser.add_argument("--seed", type=int, default=3)
+    parser.add_argument("--seed", type=int, default=5)
     parser.add_argument('--lr-steps', nargs="+", type=int, default=[6, 7])
     parser.add_argument("--lr", type=float)
     parser.add_argument("--momentum", type=float, default=0.9)

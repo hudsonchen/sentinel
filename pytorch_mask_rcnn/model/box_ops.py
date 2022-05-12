@@ -97,7 +97,7 @@ def box_iou(box_a, box_b):
 
 def process_box(box, score, image_shape, min_size):
     """
-    Clip boxes in the image size and remove boxes which are too small.
+    Clip boxes in the images size and remove boxes which are too small.
     """
     
     box[:, [0, 2]] = box[:, [0, 2]].clamp(0, image_shape[1]) 

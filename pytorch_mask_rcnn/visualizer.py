@@ -19,7 +19,7 @@ _SMALL_OBJECT_AREA_THRESH = 1000
 
 def show(images, targets=None, classes=None, save_path=None):
     """
-    Show the image, with or without the target.
+    Show the images, with or without the target.
     
     args:
         images (tensor[B, 3, H, W] or List[tensor[3, H, W]]): RGB channels, value range: [0.0, 1.0]
@@ -122,8 +122,8 @@ class VisImage:
     def __init__(self, img, scale=1.0):
         """
         Args:
-            img (ndarray): an RGB image of shape (H, W, 3) in range [0, 255].
-            scale (float): scale the input image
+            img (ndarray): an RGB images of shape (H, W, 3) in range [0, 255].
+            scale (float): scale the input images
         """
         self.img = img
         self.scale = scale
