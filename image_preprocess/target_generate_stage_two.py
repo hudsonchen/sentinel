@@ -10,6 +10,8 @@ import pickle
 from tqdm import tqdm
 from preprocess_utils import *
 
+
+directory = "./images/"
 lake_loc = {'lake_one': {'lake_pos': (1300, 1000, 1300 + 1500, 1000 + 1800),
                          'special_pos': [[2500, 1900], [2300, 1600], [2000, 2200],
                                          [2000, 2000], [2000, 1500], [1700, 1600],
@@ -24,16 +26,17 @@ lake_loc = {'lake_one': {'lake_pos': (1300, 1000, 1300 + 1500, 1000 + 1800),
                                            [4900, 3800]]}}
 
 
-def fine_tune(x1, x2, y1, y2, img, mask, special_pos):
+def fine_tune(x1, x2, y1, y2, img, mask, special_pos, visualize):
     mask_one = mask[x1:x2, y1:y2]
     img_one = img[x1:x2, y1:y2, :]
     img_one_idx = 1.0 - mask_one
 
     epochs = 3
-    fig, axs = plt.subplots(1, epochs + 1, constrained_layout=True, figsize=(20, 5))
-    axs[0].imshow(img_one / 255.)
-    axs[0].set_xticks([])
-    axs[0].set_yticks([])
+    if visualize:
+        fig, axs = plt.subplots(1, epochs + 1, constrained_layout=True, figsize=(20, 5))
+        axs[0].imshow(img_one / 255.)
+        axs[0].set_xticks([])
+        axs[0].set_yticks([])
 
     for j in range(epochs):
         river_color = img_one[(img_one_idx).astype(bool)]
@@ -64,26 +67,27 @@ def fine_tune(x1, x2, y1, y2, img, mask, special_pos):
 
         img_one_idx = img_one_idx.reshape(img_one.shape[:-1])
 
-        axs[j + 1].imshow(1.0 - img_one_idx, cmap='gray')
-        axs[j + 1].set_xticks([])
-        axs[j + 1].set_yticks([])
-
-    plt.show()
+        if visualize:
+            axs[j + 1].imshow(1.0 - img_one_idx, cmap='gray')
+            axs[j + 1].set_xticks([])
+            axs[j + 1].set_yticks([])
+    if visualize:
+        plt.show()
     mask[x1:x2, y1:y2] = 1.0 - img_one_idx
     return mask
 
 
+def stage_two(img, date, visualize):
+    mask = np.load(f'{directory}{date}_mask.npy')
+    for lake in ['lake_one', 'lake_two', 'lake_three']:
+        x1, y1, x2, y2 = lake_loc[lake]['lake_pos']
+        special_pos = lake_loc[lake]['special_pos']
+        mask = fine_tune(x1, x2, y1, y2, img, mask, special_pos, visualize)
+    np.save(f'{directory}{date}_mask.npy', mask)
+    return mask
 
 
-def stage_two():
-    finished = []
-    threshold_list = []
-
-    directory = "./images/"
-    plot_directory = "./save/plots/"
-
-
-
+if __name__ == '__main__':
     for file in os.listdir(directory):
         try:
             date = file.split("L2A_")[1][:8]
@@ -94,25 +98,12 @@ def stage_two():
 
         if ".bmp" not in file:
             flag = False
-        for finished_tag in finished:
-            if finished_tag in file:
-                flag = False
         if not flag:
             raise Exception('Already finished!')
 
-        mask = np.load(f'{directory}{date}_mask.npy')
         file_tag = file.split(".")[0]
         img = Image.open(directory + file)
         img = img.crop((6884, 0, 10980, 6800))
         img = np.array(img).astype(np.float32)
-
-        for lake in ['lake_one', 'lake_two', 'lake_three']:
-            x1, y1, x2, y2 = lake_loc[lake]['lake_pos']
-            special_pos = lake_loc[lake]['special_pos']
-            mask = fine_tune(x1, x2, y1, y2, img, mask, special_pos)
-        np.save(f'{directory}{date}_mask.npy', mask)
-    return
-
-
-if __name__ == '__main__':
-    stage_two()
+        stage_two(img, date, True)
+        break
