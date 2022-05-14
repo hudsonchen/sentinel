@@ -32,6 +32,8 @@ location_list = [(2300, 2200), (4400, 2400), (5500, 3900)]
 finished = []
 threshold_list = []
 directory = "./images/"
+save_directory = '../data/sentinel_images/'
+plot_directory = '../plot/'
 
 
 def stage_one(img, date, visualize):
@@ -69,6 +71,7 @@ def stage_one(img, date, visualize):
         axs[2].set_xticks([])
         axs[2].set_yticks([])
         axs[2].set_title("Water Image (Black and White)")
+        fig.savefig(f'{plot_directory}stage_one.pdf')
         plt.show()
 
     all_river_color = img[img_idx.astype(bool)]

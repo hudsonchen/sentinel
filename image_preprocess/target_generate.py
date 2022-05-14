@@ -24,6 +24,7 @@ plt.rcParams['axes.grid'] = True
 
 finished = []
 
+
 def init():
     for file in os.listdir(directory):
         try:
@@ -76,7 +77,7 @@ def generate_mask():
             img = np.array(img).astype(np.float32)
 
             mask = stage_one(img, date, verbose_visualize)
-            mask = stage_two(img, date, verbose_visualize)
+            mask = stage_two(mask, img, date, verbose_visualize)
 
             if visualize:
                 fig, axs = plt.subplots(1, 2, constrained_layout=True, figsize=(13, 6))
@@ -128,7 +129,8 @@ def cut_and_crop():
                     dict_to_save = {
                         "images": img[i * step_x:i * step_x + image_x, j * step_y:j * step_y + image_y, :].astype(
                             np.float32),
-                        "target": mask[i * step_x:i * step_x + image_x, j * step_y:j * step_y + image_y].astype(np.float32)}
+                        "target": mask[i * step_x:i * step_x + image_x, j * step_y:j * step_y + image_y].astype(np.float32),
+                        "location": (i * step_x, i * step_x + image_x, j * step_y, j * step_y + image_y)}
                     with open(save_directory + file_tag + str(idx) + ".pickle", 'wb') as handle:
                         pickle.dump(dict_to_save, handle)
 
@@ -162,7 +164,8 @@ def cut_and_crop():
 
 if __name__ == '__main__':
     directory = "./images/"
-    save_directory = '../data/sentinel_images'
+    save_directory = '../data/sentinel_images/'
+    plot_directory = '../plot/'
     visualize = True
     verbose_visualize = False
     init()

@@ -18,7 +18,7 @@ def threed_color_visualize(color):
         z.append(pix[2])
         c.append(newCol)
 
-    fig = plt.figure()
+    fig = plt.figure(constrained_layout=True)
     ax = plt.axes(projection='3d')
     ax.scatter(x, y, z, c=c)
     ax.set_xlabel("Red")
