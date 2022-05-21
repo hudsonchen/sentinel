@@ -22,7 +22,7 @@ plt.rcParams['xtick.major.pad'] = 2
 plt.rcParams['ytick.major.pad'] = 2
 plt.rcParams['axes.grid'] = True
 
-__all__ = ["save_ckpt", "Meter", "get_acc", "get_iou", "visualize"]
+__all__ = ["save_ckpt", "Meter", "get_acc", "get_iou", "visualize", "merge"]
 
 mean = np.array([0.485, 0.456, 0.406])[None, :, None, None]
 std = np.array([0.229, 0.224, 0.225])[:, None, None]
@@ -40,6 +40,16 @@ def get_iou(outputs, target):
     iou_score = torch.sum(intersection) / torch.sum(union)
     return iou_score.item()
 
+
+def merge(data, mask, final_mask):
+    x1, x2, y1, y2 = data['location']
+    date = data['date']
+    for j, d in enumerate(date):
+        if d not in final_mask:
+            final_mask[d] = np.zeros([6400, 4096])
+        x1_, x2_, y1_, y2_ = x1[j], x2[j], y1[j], y2[j]
+        final_mask[d][x1_:x2_, y1_:y2_] = mask[j, :].cpu().numpy()
+    return final_mask
 
 def visualize(args, data, outputs, train_test):
     fig, axs = plt.subplots(args.batch_size, 2, figsize=(5, 8))

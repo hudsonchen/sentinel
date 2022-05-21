@@ -1,1 +1,2 @@
-from .mask_rcnn import maskrcnn_resnet50
+from .fcn import *
+from .deeplab import *

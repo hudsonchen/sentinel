@@ -103,20 +103,21 @@ def cut_and_crop():
 
         if ".bmp" not in file:
             flag = False
-        for finished_tag in finished:
-            if finished_tag in file:
-                flag = False
+
+        if date not in ["20211219", "20200905"]:
+            flag = False
 
         if flag:
             file_tag = file.split(".")[0]
+            print(date)
             img = Image.open(directory + file)
-            img = img.crop((6884, 0, 10980, 6800))
+            img = img.crop((6884, 0, 10980, 6400))
             img = np.array(img).astype(np.float32)
             mask = np.load(f'{directory}{date}_mask.npy')
 
             image_x = 800
             image_y = 1024
-            num = 2
+            num = 1
             step_x = int(image_x / num)
             step_y = int(image_y / num)
             len_x = int((img.shape[0] - image_x) / step_x) + 1
@@ -133,6 +134,8 @@ def cut_and_crop():
                         "location": (i * step_x, i * step_x + image_x, j * step_y, j * step_y + image_y)}
                     with open(save_directory + file_tag + str(idx) + ".pickle", 'wb') as handle:
                         pickle.dump(dict_to_save, handle)
+
+            ss = 0
 
 # img_thres = img_np * mask[:, :, None]
 # ratio = mask.sum() / mask.shape[0] / mask.shape[1]
@@ -168,7 +171,8 @@ if __name__ == '__main__':
     plot_directory = '../plot/'
     visualize = True
     verbose_visualize = False
-    init()
-    generate_mask()
+    # init()
+    # generate_mask()
+    cut_and_crop()
 
 

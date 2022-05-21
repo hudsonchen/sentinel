@@ -34,14 +34,11 @@ class Sentinel_Dataset(Dataset):
     def __init__(self, args, train):
         self.data = []
         dict_all = load_sentinel(args)
+        total_length = len(dict_all)
         if train:
-            for dicts in dict_all:
-                if dicts['date'] in train_date:
-                    self.data.append(dicts)
+            self.data = dict_all[:int(total_length * 0.75)]
         else:
-            for dicts in dict_all:
-                if dicts['date'] in test_date:
-                    self.data.append(dicts)
+            self.data = dict_all[int(total_length * 0.75):]
         self.len = len(self.data)
 
     def __getitem__(self, index):
