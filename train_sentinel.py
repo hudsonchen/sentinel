@@ -2,6 +2,7 @@ import bisect
 import glob
 import argparse
 import os
+from tqdm import tqdm
 import re
 import time
 import matplotlib.pyplot as plt
@@ -14,7 +15,6 @@ from torch.utils.data import DataLoader
 os.environ["WANDB_API_KEY"] = "c6ea42f5f183e325a719b86d84e7aed50b2dfd5c"
 os.environ["CUDA_VISIBLE_DEVICES"] = "2, 3"
 
-
 def main(args):
     device = torch.device("cuda" if torch.cuda.is_available() and args.use_cuda else "cpu")
     if device.type == "cuda":
@@ -23,7 +23,7 @@ def main(args):
     gpu_num = torch.cuda.device_count()
     args.batch_size *= gpu_num
     print(args)
-    wandb.init(project='sentinel', config=args, entity="hudsonchen")
+    # wandb.init(project='sentinel', config=args, entity="hudsonchen")
 
     # ---------------------- prepare data loader ------------------------------- #
     train_dataset = pmr.Sentinel_Dataset(args, train=True)
@@ -31,6 +31,7 @@ def main(args):
     train_loader = DataLoader(dataset=train_dataset, batch_size=args.batch_size, shuffle=True, num_workers=12)
     test_loader = DataLoader(dataset=test_dataset, batch_size=args.batch_size, shuffle=True, num_workers=12)
 
+    merge_vis = pmr.MergeVisualize(args, train_dataset.get_date_all())
     # -------------------------------------------------------------------------- #
     if args.model == 'fcn':
         vgg_model = pmr.VGGNet(requires_grad=True, remove_fc=True).to(device)
@@ -45,7 +46,7 @@ def main(args):
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
     # --------------------------------------- train ----------------------------- #
-    for epoch in range(0, args.epochs):
+    for epoch in tqdm(range(0, args.epochs)):
         model.eval()
         with torch.no_grad():
             loss_test = 0
@@ -76,12 +77,14 @@ def main(args):
             acc_train /= len(train_loader)
             iou_train /= len(train_loader)
 
-        wandb.log({"Train Loss": loss_train,
-                   "Train Acc": acc_train,
-                   "Train IoU": iou_train,
-                   "Test Loss": loss_test,
-                   "Test Acc": acc_test,
-                   "Test IoU": iou_test})
+        # wandb.log({"Train Loss": loss_train,
+        #            "Train Acc": acc_train,
+        #            "Train IoU": iou_train,
+        #            "Test Loss": loss_test,
+        #            "Test Acc": acc_test,
+        #            "Test IoU": iou_test})
+
+        pmr.save_log(args, epoch, acc_train, acc_test, iou_train, iou_test, loss_train, loss_test)
 
         for data in train_loader:
             image = data['images'].to(device).float()
@@ -103,31 +106,32 @@ def main(args):
                     target = data['target'].to(device).float()
                     outputs = model(image)[:, 0, :]
                     fig_test = pmr.visualize(args, data, outputs, "test")
-                    break
-            wandb.log({"fig_train": fig_train,
-                       "fig_test": fig_test})
-        break
+            # wandb.log({"fig_train": fig_train,
+            #            "fig_test": fig_test})
 
-    print("Training finished.")
+    print("Training finished!")
     model.eval()
-    final_mask = {}
     with torch.no_grad():
         for data in train_loader:
             image = data['images'].to(device).float()
             target = data['target'].to(device).float()
             outputs = model(image)[:, 0, :]
             mask = (torch.sigmoid(outputs) > 0.5).float()
-            final_mask = pmr.merge(data, mask, final_mask)
+            merge_vis.update(data, mask)
+
+            # final_mask = pmr.merge(data, mask, final_mask)
         for data in test_loader:
             image = data['images'].to(device).float()
             target = data['target'].to(device).float()
             outputs = model(image)[:, 0, :]
             mask = (torch.sigmoid(outputs) > 0.5).float()
-            final_mask = pmr.merge(data, mask, final_mask)
+            merge_vis.update(data, mask)
+            # final_mask = pmr.merge(data, mask, final_mask)
+    merge_vis.get_result_and_save()
+    print('All finished!')
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     parser.add_argument("--use-cuda", action="store_true")
 
@@ -135,7 +139,7 @@ if __name__ == "__main__":
     parser.add_argument("--model", default="fcn", help="fcn or deeplab")
     parser.add_argument("--data-dir", default="/home/xzhoubi/hudson/data/cocostuff")
     parser.add_argument("--ckpt-path", default="/home/xzhoubi/hudson/maskrcnn/checkpoints")
-    parser.add_argument("--results")
+    parser.add_argument("--save-path", default="/home/xzhoubi/hudson/maskrcnn/save")
 
     parser.add_argument("--seed", type=int, default=3)
     parser.add_argument("--batch_size", type=int, default=2)
@@ -153,7 +157,4 @@ if __name__ == "__main__":
         args.lr = 0.02 * 1 / 16  # lr should be 'batch_size / 16 * 0.02'
     # if args.ckpt_path is None:
     #     args.ckpt_path = "./maskrcnn_{}.pth".format(args.dataset)
-    if args.results is None:
-        args.results = os.path.join(os.path.dirname(args.ckpt_path), "maskrcnn_results.pth")
-
     main(args)

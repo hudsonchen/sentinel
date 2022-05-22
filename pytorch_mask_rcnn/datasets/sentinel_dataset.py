@@ -9,9 +9,6 @@ __all__ = ['Sentinel_Dataset']
 mean = np.array([0.485, 0.456, 0.406])[:, None, None]
 std = np.array([0.229, 0.224, 0.225])[:, None, None]
 
-train_date = ["20211229", "20211204", "20211114", "20211005"]
-test_date = ["20211219", "20200905"]
-
 
 def load_sentinel(args):
     directory = args.data_dir
@@ -41,15 +38,21 @@ class Sentinel_Dataset(Dataset):
             self.data = dict_all[int(total_length * 0.75):]
         self.len = len(self.data)
 
+        self.date_all = []
+        for dict_ in dict_all:
+            date = dict_['date']
+            if date not in self.date_all:
+                self.date_all.append(date)
+
     def __getitem__(self, index):
         return self.data[index]
 
     def __len__(self):
         return self.len
 
+    def get_date_all(self):
+        return self.date_all
 
-def concate_visualize(dict_all, outputs):
-    return
 
 
 def construct_target(masks):
