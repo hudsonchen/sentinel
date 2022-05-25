@@ -104,8 +104,8 @@ def cut_and_crop():
         if ".bmp" not in file:
             flag = False
 
-        if date not in ["20211219", "20200905"]:
-            flag = False
+        # if date not in ["20211219", "20200905"]:
+        #     flag = False
 
         if flag:
             file_tag = file.split(".")[0]
@@ -171,8 +171,8 @@ if __name__ == '__main__':
     plot_directory = '../plot/'
     visualize = True
     verbose_visualize = False
-    # init()
-    # generate_mask()
+    init()
+    generate_mask()
     cut_and_crop()
 
 

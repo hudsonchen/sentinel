@@ -6,6 +6,8 @@ import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
 import pickle
+import pandas as pd
+import csv
 
 plt.rcParams["xtick.direction"] = "in"
 plt.rcParams["ytick.direction"] = "in"
@@ -31,7 +33,7 @@ std = np.array([0.229, 0.224, 0.225])[:, None, None]
 
 def get_acc(outputs, target):
     mask = torch.sigmoid(outputs) > 0.5
-    return (target == mask).float().mean().item()
+    return (target == mask).float().mean()
 
 
 def get_iou(outputs, target):
@@ -39,7 +41,7 @@ def get_iou(outputs, target):
     intersection = torch.logical_and(target, mask).to(torch.float32)
     union = torch.logical_or(target, mask).to(torch.float32)
     iou_score = torch.sum(intersection) / torch.sum(union)
-    return iou_score.item()
+    return iou_score
 
 
 def merge(data, mask, final_mask):
@@ -78,22 +80,42 @@ def visualize(args, data, outputs, train_test):
                         wspace=0.05,
                         hspace=0.05)
     # plt.show()
+    plt.close()
     return fig
 
 
 def save_log(args, epoch, acc_train, acc_test, iou_train, iou_test, loss_train, loss_test):
-    dict_ = {}
-    dict_["Train Loss"] = loss_train
-    dict_["Train Acc"] = acc_train,
-    dict_["Train IoU"] = iou_train,
-    dict_["Test Loss"] = loss_test,
-    dict_["Test Acc"] = acc_test,
-    dict_["Test IoU"] = iou_test
-    if not os.path.exists(f"{args.save_path}/seed_{args.seed}"):
-        os.mkdir(f"{args.save_path}/seed_{args.seed}")
-    f = open(f"{args.save_path}/seed_{args.seed}/epoch_{epoch}", "wb")
-    pickle.dump(dict_, f)
-    f.close()
+    file_name = f"{args.save_path}/results.csv"
+    if epoch == 0:
+        if not os.path.exists(args.save_path):
+            os.mkdir(args.save_path)
+        if os.path.exists(file_name):
+            os.remove(file_name)
+    with open(file_name, "a") as metrics_file:
+        metrics_header = [
+            "Epoch",
+            "Train Loss",
+            "Test Loss",
+            "Train Accuracy",
+            "Test Accuracy",
+            "Train IoU",
+            "Test IoU",
+        ]
+        writer = csv.DictWriter(metrics_file, fieldnames=metrics_header)
+        if os.stat(file_name).st_size == 0:
+            writer.writeheader()
+        writer.writerow(
+            {
+                "Epoch": epoch,
+                "Train Loss": loss_train.cpu().numpy(),
+                "Test Loss": loss_test.cpu().numpy(),
+                "Train Accuracy": acc_train.cpu().numpy(),
+                "Test Accuracy": acc_test.cpu().numpy(),
+                "Train IoU": iou_train.cpu().numpy(),
+                "Test IoU": iou_test.cpu().numpy(),
+            }
+        )
+        metrics_file.close()
     return
 
 
@@ -113,10 +135,10 @@ def save_ckpt(model, optimizer, epochs, ckpt_path, **kwargs):
 
 class MergeVisualize:
     def __init__(self, args, date_all):
-        self.save_path = f"{args.save_path}/seed_{args.seed}"
+        self.save_path = args.save_path
         self.target_all = {}
         for date in date_all:
-            self.target_all[date] = np.zeros([6800, 4096])
+            self.target_all[date] = np.zeros([6400, 4096])
 
     def update(self, data, mask):
         x1, x2, y1, y2 = data['location']

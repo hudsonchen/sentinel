@@ -56,3 +56,44 @@ def visulize_points_rect(img, lake_loc):
     plt.show()
     return fig
 
+
+def visualize_lake_location(img):
+    fig = plt.figure()
+    ax = fig.add_subplot(1, 1, 1)
+    plt.imshow(img / 255.)
+    plt.xticks([])
+    plt.yticks([])
+    plt.scatter(2200, 2300, s=5, c='red', marker='o')
+    plt.scatter(1900, 2300, s=5, c='red', marker='o')
+    plt.scatter(1600, 2300, s=5, c='red', marker='o')
+
+    plt.scatter(2200, 2000, s=5, c='red', marker='o')
+    plt.scatter(1900, 2000, s=5, c='red', marker='o')
+    plt.scatter(1600, 2000, s=5, c='red', marker='o')
+
+    plt.scatter(1600, 1700, s=5, c='red', marker='o')
+
+    plt.scatter(1300, 2300, s=5, c='red', marker='o')
+
+    plt.scatter(2200, 4400, s=5, c='orange', marker='o')
+    plt.scatter(2500, 4400, s=5, c='orange', marker='o')
+    plt.scatter(2800, 4400, s=5, c='orange', marker='o')
+
+    plt.scatter(2200, 4700, s=5, c='orange', marker='o')
+
+    plt.scatter(3900, 5500, s=5, c='pink', marker='o')
+    plt.scatter(3600, 5500, s=5, c='pink', marker='o')
+
+    plt.scatter(3600, 5800, s=5, c='pink', marker='o')
+    plt.scatter(3300, 5800, s=5, c='pink', marker='o')
+    plt.scatter(3000, 6300, s=5, c='pink', marker='o')
+
+    # Create a Rectangle patch
+    rect = patches.Rectangle((1000, 1300), 1800, 1500, linewidth=1, edgecolor='r', facecolor='none')
+    ax.add_patch(rect)
+    rect = patches.Rectangle((1800, 4000), 1200, 1200, linewidth=1, edgecolor='orange', facecolor='none')
+    ax.add_patch(rect)
+    rect = patches.Rectangle((2500, 4800), 1590, 1700, linewidth=1, edgecolor='pink', facecolor='none')
+    ax.add_patch(rect)
+    plt.show()
+    return

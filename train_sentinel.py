@@ -13,7 +13,8 @@ import wandb
 from torch.utils.data import DataLoader
 
 os.environ["WANDB_API_KEY"] = "c6ea42f5f183e325a719b86d84e7aed50b2dfd5c"
-os.environ["CUDA_VISIBLE_DEVICES"] = "2, 3"
+os.environ["CUDA_VISIBLE_DEVICES"] = "3, 4"
+
 
 def main(args):
     device = torch.device("cuda" if torch.cuda.is_available() and args.use_cuda else "cpu")
@@ -46,7 +47,7 @@ def main(args):
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
     # --------------------------------------- train ----------------------------- #
-    for epoch in tqdm(range(0, args.epochs)):
+    for epoch in range(0, args.epochs):
         model.eval()
         with torch.no_grad():
             loss_test = 0
@@ -86,7 +87,7 @@ def main(args):
 
         pmr.save_log(args, epoch, acc_train, acc_test, iou_train, iou_test, loss_train, loss_test)
 
-        for data in train_loader:
+        for data in tqdm(train_loader):
             image = data['images'].to(device).float()
             target = data['target'].to(device).float()
             model.train()
@@ -128,6 +129,7 @@ def main(args):
             merge_vis.update(data, mask)
             # final_mask = pmr.merge(data, mask, final_mask)
     merge_vis.get_result_and_save()
+    torch.save(model.state_dict(), f"{args.save_path}/params")
     print('All finished!')
 
 
@@ -157,4 +159,5 @@ if __name__ == "__main__":
         args.lr = 0.02 * 1 / 16  # lr should be 'batch_size / 16 * 0.02'
     # if args.ckpt_path is None:
     #     args.ckpt_path = "./maskrcnn_{}.pth".format(args.dataset)
+    args.save_path = f"{args.save_path}/model_{args.model}__seed_{args.seed}"
     main(args)
