@@ -13,7 +13,7 @@ import wandb
 from torch.utils.data import DataLoader
 
 os.environ["WANDB_API_KEY"] = "c6ea42f5f183e325a719b86d84e7aed50b2dfd5c"
-os.environ["CUDA_VISIBLE_DEVICES"] = "3, 4"
+os.environ["CUDA_VISIBLE_DEVICES"] = "3"
 
 
 def main(args):
@@ -56,6 +56,7 @@ def main(args):
             for data in test_loader:
                 image = data['images'].to(device).float()
                 target = data['target'].to(device).float()
+                print(image.shape)
                 outputs = model(image)[:, 0, :]
                 loss_test += criterion(outputs, target)
                 acc_test += pmr.get_acc(outputs, target)
